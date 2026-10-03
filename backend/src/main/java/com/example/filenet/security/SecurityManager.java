@@ -16,6 +16,10 @@ public class SecurityManager {
     }
 
     public static boolean hasPermission(String username, String action) {
-        return "WRITE".equals(userRoles.get(username)) || "READ".equals(action);
+        if (username == null || !("READ".equals(action) || "WRITE".equals(action))) {
+            return false;
+        }
+        String role = userRoles.get(username);
+        return "WRITE".equals(role) || ("READ".equals(role) && "READ".equals(action));
     }
 }

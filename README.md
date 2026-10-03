@@ -1,78 +1,75 @@
-# WebLogic / WebSphere Communication 
+# WebLogic / WebSphere communication and FileNet-style examples
 
-## Overview
+A Java integration-learning project containing a connectivity probe and
+small in-memory examples of document-system concerns. It is **not a
+complete FileNet replacement or a deployable enterprise server**.
 
-This project simulates a ** FileNet system simulation "not the full system** where:
-- **WebLogic** runs a client application that interacts with FileNet.
-- **WebSphere** hosts the **FileNet Simulation**, including:
-  - A REST API mimicking FileNet Content Engine (CE).
-  - An EJB service representing FileNet workflow operations.
+## Repository contents
 
-This setup allows **testing real-world communication** between WebLogic and WebSphere in a FileNet-based architecture.
+- [WebLogicToWebSphereTest](WebLogic/WebLogicToWebSphereTest.java): HTTP GET
+  connectivity check and a WebSphere-specific JNDI lookup example
+- [SecurityManager](backend/src/main/java/com/example/filenet/security/SecurityManager.java):
+  a small READ/WRITE permission example
+- Audit log, event, storage, search and workflow example classes under
+  [backend/src/main/java/com/example/filenet](backend/src/main/java/com/example/filenet)
 
-## Project Structure
+The repository does not include a REST endpoint implementation, deployable
+EJB service or complete application-server setup.
 
+## Permission behavior
+
+The example has two fixed principals:
+
+| Principal | READ | WRITE | Other or null action |
+| --- | --- | --- | --- |
+| admin | allowed | allowed | denied |
+| user | allowed | denied | denied |
+| unknown, empty or null | denied | denied | denied |
+
+Action names are case-sensitive. Unknown users do not gain read access.
+This is an in-memory policy example, **not authentication**: callers can
+still supply a string username. Do not expose it as a production security
+boundary.
+
+## Run the isolated regression tests
+
+Requirements: a full JDK and Python 3. No server, third-party package,
+credentials, database or network connection is needed.
+
+```sh
+git clone https://github.com/Danmachi1/Websphere-Weblogic-communication-test.git
+cd Websphere-Weblogic-communication-test
+python3 scripts/test_security.py
 ```
-WebLogic-WebSphere-FileNet-Simulation/
-│── WebLogic/                 # WebLogic Client Application
-│   │── src/
-│   │   ├── WebLogicToFileNetClient.java  (Main client-side application)
-│   │   ├── WebLogicToWebSphereTest.java  (Connection test script)
-│   │── README.md              (Setup guide for WebLogic)
-│
-│── WebSphere/                # WebSphere Hosting FileNet Simulation
-│   │── src/
-│   │   ├── FileNetServiceEJB.java  (EJB simulating FileNet workflow handling)
-│   │   ├── WebSphereFileNetAPI.java  (REST API simulating FileNet CE)
-│   │── README.md              (Setup guide for WebSphere)
-│
-│── FileNetSimulation/         # Complete FileNet Simulation from Provided Code
-│   │── ... (All files from uploaded FileNet Simulation)
-│
-│── README.md                 # Main Project Documentation
-│── .gitignore
-│── push_project.sh            # Automated Git Push Script
-```
 
-## Setup & Usage
+On Windows, use `python` instead of `python3`. Put the JDK on PATH or
+set `JAVA` to the Java executable. The script compiles only the permission
+class and its regression harness in a temporary directory.
 
- WebLogic Setup
+Focused validation on OpenJDK 21: **30/30 permission cases passed**.
+The original implementation failed **7 cases**, including reads by
+unknown users and unsupported actions by the write-capable principal.
 
-1. Install **WebLogic Server**.
-2. Deploy the **WebLogic Client Application (`WebLogicToFileNetClient.java`)**.
-3. Ensure WebLogic can communicate with WebSphere over **required ports**.
-4. Run the client application to interact with the FileNet simulation.
+## Connectivity probe prerequisites
 
-WebSphere Setup
+The probe contains placeholder hostnames. It requires an actual
+authorized server endpoint and, for JNDI, the matching WebSphere client
+libraries and server configuration. Do not run it against systems you do
+not own or have permission to test. Never commit credentials.
 
-1. Install **WebSphere Application Server**.
-2. Deploy the **FileNet Simulation**:
-   - `FileNetServiceEJB.java` (Simulates FileNet Workflow Engine)
-   - `WebSphereFileNetAPI.java` (Simulates FileNet Content Engine)
-3. Ensure WebSphere allows external access to the REST API and EJB services.
+Compiling/running the isolated permission tests does not exercise HTTP,
+JNDI, WebLogic, WebSphere or FileNet. No application-server integration
+test was performed in this focused regression pass.
 
-###  Running the Full Test
+## Other known example limitations
 
-- **To test WebLogic → FileNet (via WebSphere):**  
-  ```bash
-  java WebLogicToFileNetClient
-  ```
+- DocumentStorage references a FileNetDocument type not supplied here.
+- SearchEngine needs Lucene dependencies and currently parses a query;
+  it does not return stored search results.
+- DatabaseConfig names an in-memory H2 connection; its driver is not
+  packaged by this repository.
+- The audit and workflow examples use in-memory collections.
+- No complete build manifest or production persistence/concurrency
+  guarantees are supplied.
 
-- **To run WebLogic → WebSphere connection test:**  
-  ```bash
-  java WebLogicToWebSphereTest
-  ```
-
-- **To push everything to GitHub:**  
-  ```bash
-  bash push_project.sh
-  ```
-
-## Troubleshooting
-
-- **Connection Issues?** Check network, ports, and security settings.
-- **EJB Lookup Fails?** Ensure WebSphere’s `iiop` service is running.
-- **FileNet API Unreachable?** Ensure WebSphere has deployed the FileNet API.
-
----
-This project provides a **complete FileNet simulation** for testing WebLogic-WebSphere integration.
+These examples are intended for learning and local experimentation.
